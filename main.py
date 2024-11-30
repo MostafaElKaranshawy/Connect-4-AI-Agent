@@ -1,6 +1,6 @@
 from tkinter.constants import (DISABLED, NORMAL)
 import customtkinter as ctk
-from tkinter import messagebox
+from tkinter import messagebox, Canvas, Scrollbar
 from methods import Methods
 
 COLS = 7
@@ -29,18 +29,43 @@ class GameBoard(ctk.CTkFrame):
         self.player2_score = 0
         self.player1 = "Player 1" if game_mode == 2 else "Computer"
         self.player2 = "Player 2" if game_mode == 1 else "Computer"
-        self.score_board = ctk.CTkFrame(self, width=500, height=500, bg_color="transparent")
-        self.score_board_player1 = ctk.CTkLabel(self.score_board, text=f"{self.player1}: {self.player1_score}", font=("Times New Roman", 30, "bold", "italic"),
-                                        text_color='blue',
-                                        fg_color="transparent")
-        self.score_board_player2 = ctk.CTkLabel(self.score_board, text=f"{self.player2}: {self.player2_score}", font=("Times New Roman", 30, "bold", "italic"),
-                                        text_color='blue',
-                                        fg_color="transparent")
+
+        self.canvas = Canvas(self)
+        self.scrollbar = Scrollbar(self, orient="vertical", command=self.canvas.yview)
+        self.canvas.configure(yscrollcommand=self.scrollbar.set)
+
+        # Pack the scrollbar and canvas
+        self.scrollbar.pack(side="right", fill="y")
+        self.canvas.pack(side="left", fill="both", expand=True)
+
+        # Create a frame inside the canvas
+        self.content_frame = ctk.CTkFrame(self.canvas)
+        self.canvas.create_window((0, 0), window=self.content_frame, anchor="nw")
+
+        # Bind the configuration to update the scrollable region
+        self.content_frame.bind(
+            "<Configure>", lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+        )
+
+        # Center the content_frame within the window
+        self.place(relx=0.5, rely=0.5, anchor="center")
+
+        # Set the window size to fit the content
+        self.master.geometry("800x1200")  # Adjust this based on your layout
+
+        # Add widgets inside content_frame (this frame will be scrollable)
+        self.score_board = ctk.CTkFrame(self.content_frame, width=500, height=500, bg_color="transparent")
+        self.score_board_player1 = ctk.CTkLabel(self.score_board, text=f"{self.player1}: {self.player1_score}",
+                                                font=("Times New Roman", 30, "bold", "italic"),
+                                                text_color='blue', fg_color="transparent")
+        self.score_board_player2 = ctk.CTkLabel(self.score_board, text=f"{self.player2}: {self.player2_score}",
+                                                font=("Times New Roman", 30, "bold", "italic"),
+                                                text_color='blue', fg_color="transparent")
         self.score_board.pack(pady=10)
         self.score_board_player1.pack(pady=10)
         self.score_board_player2.pack(pady=10)
 
-        self.game_frame = ctk.CTkFrame(self,width=700, height=700)
+        self.game_frame = ctk.CTkFrame(self.content_frame, width=700, height=700)
         self.game_frame.pack(pady=50, padx=50)
         self.board = [[0] * COLS for _ in range(ROWS)]  # Initialize empty board
         self.configure(fg_color=BG_COLOR)
@@ -54,7 +79,7 @@ class GameBoard(ctk.CTkFrame):
         self.tiles = [[None for _ in range(COLS)] for _ in range(ROWS)]
         self.create_board()
 
-        self.buttons = ctk.CTkFrame(self, width=500, height=300, bg_color="transparent")
+        self.buttons = ctk.CTkFrame(self.content_frame, width=500, height=300, bg_color="transparent")
         self.buttons.pack(pady=10)
 
         self.start_game_button = ctk.CTkButton(
@@ -264,7 +289,7 @@ class GameBoard(ctk.CTkFrame):
         if response:
             self.exit_game()
     def human_turn(self, col):
-        if self.current_player == self.game_mode:
+        if self.current_player == self.game_mode or not self.game_started:
             return
         self.drop_token(col)
     def computer_turn(self):
