@@ -12,7 +12,7 @@ class MinMax:
 
 
     def decide_ai_move(self, board):
-        root = Node()
+        root = Node(type="max")
         depth = self.max_depth
         optimal_col, _ = self._maximize(board, root, depth)
         # root.print_tree()
@@ -34,7 +34,7 @@ class MinMax:
         for child in children:
             col = columns[i]
 
-            child_node = Node(col = col)
+            child_node = Node(col = col, type="min")
             root.add_child(child_node)
 
             _, utility = self._minimize(child, child_node, depth - 1)
@@ -61,7 +61,7 @@ class MinMax:
         for child in children:
             col = columns[i]
 
-            child_node = Node(col = col)
+            child_node = Node(col = col, type="max")
             root.add_child(child_node)
 
             _, utility = self._maximize(child, child_node, depth - 1)

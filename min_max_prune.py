@@ -12,7 +12,7 @@ class MinMaxPrune:
 
 
     def decide_ai_move(self, board):
-        root = Node()
+        root = Node(type="max")
         depth = self.max_depth
         alpha = -math.inf
         beta = math.inf
@@ -37,7 +37,7 @@ class MinMaxPrune:
         for child in children:
             col = columns[i]
 
-            child_node = Node(col = col)
+            child_node = Node(col = col, type="min")
             root.add_child(child_node)
 
             _, utility = self._minimize(child, child_node, depth - 1, alpha, beta)
@@ -68,7 +68,7 @@ class MinMaxPrune:
         for child in children:
             col = columns[i]
 
-            child_node = Node(col = col)
+            child_node = Node(col = col, type="max")
             root.add_child(child_node)
 
             _, utility = self._maximize(child, child_node, depth - 1, alpha, beta)

@@ -1,10 +1,10 @@
 class Node:
 
-    def __init__(self, value = None, col = None):
+    def __init__(self, value = None, col = None, type = None):
         self.col = col
         self.value = value  # Data held by the node
         self.children = []  # List to store child nodes
-
+        self.type = type
     def add_child(self, child_node):
         self.children.append(child_node)
 

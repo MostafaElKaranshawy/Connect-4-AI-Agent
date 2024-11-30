@@ -30,43 +30,19 @@ class GameBoard(ctk.CTkFrame):
         self.player1 = "Player 1" if game_mode == 2 else "Computer"
         self.player2 = "Player 2" if game_mode == 1 else "Computer"
 
-        self.canvas = Canvas(self)
-        self.scrollbar = Scrollbar(self, orient="vertical", command=self.canvas.yview)
-        self.canvas.configure(yscrollcommand=self.scrollbar.set)
-
-        # Pack the scrollbar and canvas
-        self.scrollbar.pack(side="right", fill="y")
-        self.canvas.pack(side="left", fill="both", expand=True)
-
-        # Create a frame inside the canvas
-        self.content_frame = ctk.CTkFrame(self.canvas)
-        self.canvas.create_window((0, 0), window=self.content_frame, anchor="nw")
-
-        # Bind the configuration to update the scrollable region
-        self.content_frame.bind(
-            "<Configure>", lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all"))
-        )
-
-        # Center the content_frame within the window
-        self.place(relx=0.5, rely=0.5, anchor="center")
-
-        # Set the window size to fit the content
-        self.master.geometry("800x1200")  # Adjust this based on your layout
-
-        # Add widgets inside content_frame (this frame will be scrollable)
-        self.score_board = ctk.CTkFrame(self.content_frame, width=500, height=500, bg_color="transparent")
+        self.score_board = ctk.CTkFrame(self, width=500, height=500, bg_color="transparent")
         self.score_board_player1 = ctk.CTkLabel(self.score_board, text=f"{self.player1}: {self.player1_score}",
                                                 font=("Times New Roman", 30, "bold", "italic"),
                                                 text_color='blue', fg_color="transparent")
         self.score_board_player2 = ctk.CTkLabel(self.score_board, text=f"{self.player2}: {self.player2_score}",
                                                 font=("Times New Roman", 30, "bold", "italic"),
                                                 text_color='blue', fg_color="transparent")
-        self.score_board.pack(pady=10)
-        self.score_board_player1.pack(pady=10)
-        self.score_board_player2.pack(pady=10)
+        self.score_board.pack(pady=5)
+        self.score_board_player1.pack(pady=5)
+        self.score_board_player2.pack(pady=5)
 
-        self.game_frame = ctk.CTkFrame(self.content_frame, width=700, height=700)
-        self.game_frame.pack(pady=50, padx=50)
+        self.game_frame = ctk.CTkFrame(self, width=700, height=700)
+        self.game_frame.pack(pady=20, padx=20)
         self.board = [[0] * COLS for _ in range(ROWS)]  # Initialize empty board
         self.configure(fg_color=BG_COLOR)
 
@@ -79,8 +55,8 @@ class GameBoard(ctk.CTkFrame):
         self.tiles = [[None for _ in range(COLS)] for _ in range(ROWS)]
         self.create_board()
 
-        self.buttons = ctk.CTkFrame(self.content_frame, width=500, height=300, bg_color="transparent")
-        self.buttons.pack(pady=10)
+        self.buttons = ctk.CTkFrame(self, width=500, height=300, bg_color="transparent")
+        self.buttons.pack(pady=5)
 
         self.start_game_button = ctk.CTkButton(
             self.buttons,
@@ -90,7 +66,7 @@ class GameBoard(ctk.CTkFrame):
             text_color='white',
             font=("Times New Roman", 20),
         )
-        self.start_game_button.pack(side="left", padx=10, pady=10)
+        self.start_game_button.pack(side="left", padx=10, pady=5)
 
         exit_button = ctk.CTkButton(
             self.buttons,
@@ -100,12 +76,22 @@ class GameBoard(ctk.CTkFrame):
             text_color="white",
             font=("Times New Roman", 20),
         )
-        exit_button.pack(side="left", padx=10, pady=10)
+        exit_button.pack(side="right", padx=10, pady=5)
+
+        self.tree_button = ctk.CTkButton(
+            self.game_frame,
+            text="Show Tree",
+            fg_color="#FF6347",
+            text_color="white",
+            font=("Times New Roman", 20),
+            state=DISABLED
+        )
+        self.tree_button.pack(padx=10, pady=5)
 
     def create_header(self):
         """Create interactive header tiles above the board."""
         header_frame = ctk.CTkFrame(self.game_frame, fg_color="transparent")
-        header_frame.pack(pady=10)
+        header_frame.pack(pady=5)
 
         # Configure columns to make them equal width
         for col in range(COLS):
@@ -130,7 +116,7 @@ class GameBoard(ctk.CTkFrame):
     def create_board(self):
         """Create the Connect 4 board."""
         board_frame = ctk.CTkFrame(self.game_frame, fg_color="blue", corner_radius=10)
-        board_frame.pack(pady=30)
+        board_frame.pack(pady=10)
 
         # Configure the rows and columns of the board
         for col in range(COLS):
@@ -298,7 +284,10 @@ class GameBoard(ctk.CTkFrame):
         else:
             self.score_board_player2.configure(text=f"{self.player2}: {self.player2_score}\tComputer is thinking....")
         self.update_idletasks()  # Force the UI to update immediately
-        best_move = self.algorithm.computer_choice(board=self.board)
+        best_move, node = self.algorithm.computer_choice(board=self.board)
+
+        self.tree_button.configure(command=lambda: self.algorithm.show_tree(node), state=NORMAL) # Use lambda to delay execution)
+
         if self.player1 == "Computer":
             self.score_board_player1.configure(text=f"{self.player1}: {self.player1_score}")
         else:
@@ -326,11 +315,11 @@ class OptionsMenu(ctk.CTkFrame):
         # Title label
         title_label = ctk.CTkLabel(self, text="Connect 4 Game", font=("Times New Roman", 30, "bold"),
                                    text_color='white')
-        title_label.grid(row=0, column=0, pady=10)
+        title_label.grid(row=0, column=0, pady=5)
 
         # Input field for K value
         self.k_entry = ctk.CTkEntry(self, placeholder_text="Enter K value", font=("Times New Roman", 20))
-        self.k_entry.grid(row=1, column=0, pady=10)
+        self.k_entry.grid(row=1, column=0, pady=5)
         self.k_entry._set_dimensions(300, 30)
 
         # Game mode options
@@ -339,14 +328,14 @@ class OptionsMenu(ctk.CTkFrame):
         # Create a CTkComboBox for overall game mode
         self.method_combo_box = ctk.CTkComboBox(self, values=method_options, width=200, font=("Times New Roman", 20))
         self.method_combo_box.set("Select an option")
-        self.method_combo_box.grid(row=2, column=0, pady=10)
+        self.method_combo_box.grid(row=2, column=0, pady=5)
         self.method_combo_box._set_dimensions(300, 30)
 
         # Drop-down menu for selecting player vs computer settings
         self.mode_options = ["Computer as player1", "Computer as player2"]
         self.mode_combo_box = ctk.CTkComboBox(self, values=self.mode_options, width=200, font=("Times New Roman", 20))
         self.mode_combo_box.set("Choose computer player turn")
-        self.mode_combo_box.grid(row=3, column=0, pady=10)
+        self.mode_combo_box.grid(row=3, column=0, pady=5)
         self.mode_combo_box._set_dimensions(300, 30)
 
         # Button to confirm selection and start the game
@@ -358,7 +347,7 @@ class OptionsMenu(ctk.CTkFrame):
             text_color="white",
             font=("Times New Roman", 20),
         )
-        start_button.grid(row=4, column=0, pady=10)
+        start_button.grid(row=4, column=0, pady=5)
         start_button._set_dimensions(300, 30)
 
         # Exit Button
@@ -370,7 +359,7 @@ class OptionsMenu(ctk.CTkFrame):
             text_color="white",
             font=("Times New Roman", 20),
         )
-        exit_button.grid(row=5, column=0, pady=10)
+        exit_button.grid(row=5, column=0, pady=5)
         exit_button._set_dimensions(300, 30)
 
 
