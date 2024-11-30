@@ -1,5 +1,8 @@
+import threading
+
 from min_max import MinMax
 from min_max_prune import MinMaxPrune
+from tree2 import TreeVisualizer
 
 class Methods:
     def __init__(self, method, computer_turn, k):
@@ -15,5 +18,7 @@ class Methods:
             pass
     def computer_choice(self, board):
         move, tree_node = self.method.decide_ai_move(board=board)
+        tree = TreeVisualizer(tree_node)
+        tree.display_tree()
         return move
 
