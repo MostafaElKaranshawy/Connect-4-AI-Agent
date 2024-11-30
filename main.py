@@ -1,8 +1,7 @@
-from time import sleep
-
+from tkinter.constants import (DISABLED, NORMAL)
 import customtkinter as ctk
 from tkinter import messagebox
-import math
+from methods import Methods
 
 COLS = 7
 ROWS = 6
@@ -16,9 +15,6 @@ EMPTY_COLOR = "#B0C4DE"  # Light Steel Blue
 BG_COLOR = "lightblue"  # Sky Blue
 
 
-def minmax(board, turn, k):
-    return 0
-
 class GameBoard(ctk.CTkFrame):
     def __init__(self, master, exit_game, game_mode, k, method, *args, **kwargs):
         super().__init__(master, *args, **kwargs)
@@ -27,14 +23,22 @@ class GameBoard(ctk.CTkFrame):
         self.game_mode = game_mode  # Store the game mode
         self.current_player = 1  # Player 1 starts
         self.method = method
-
+        self.algorithm = Methods(method, game_mode, k)
+        self.game_started = False
         self.player1_score = 0
         self.player2_score = 0
-
-        self.score_board = ctk.CTkLabel(self, text="Player 1: 0\tPlayer 2: 0", font=("Times New Roman", 30, "bold", "italic"),
+        self.player1 = "Player 1" if game_mode == 2 else "Computer"
+        self.player2 = "Player 2" if game_mode == 1 else "Computer"
+        self.score_board = ctk.CTkFrame(self, width=500, height=500, bg_color="transparent")
+        self.score_board_player1 = ctk.CTkLabel(self.score_board, text=f"{self.player1}: {self.player1_score}", font=("Times New Roman", 30, "bold", "italic"),
+                                        text_color='blue',
+                                        fg_color="transparent")
+        self.score_board_player2 = ctk.CTkLabel(self.score_board, text=f"{self.player2}: {self.player2_score}", font=("Times New Roman", 30, "bold", "italic"),
                                         text_color='blue',
                                         fg_color="transparent")
         self.score_board.pack(pady=10)
+        self.score_board_player1.pack(pady=10)
+        self.score_board_player2.pack(pady=10)
 
         self.game_frame = ctk.CTkFrame(self,width=700, height=700)
         self.game_frame.pack(pady=50, padx=50)
@@ -49,17 +53,29 @@ class GameBoard(ctk.CTkFrame):
         # Create the main board
         self.tiles = [[None for _ in range(COLS)] for _ in range(ROWS)]
         self.create_board()
-        self.start_game()
-        # Exit button
+
+        self.buttons = ctk.CTkFrame(self, width=500, height=300, bg_color="transparent")
+        self.buttons.pack(pady=10)
+
+        self.start_game_button = ctk.CTkButton(
+            self.buttons,
+            text="Start Game",
+            fg_color='green',
+            command=self.start_game,
+            text_color='white',
+            font=("Times New Roman", 20),
+        )
+        self.start_game_button.pack(side="left", padx=10, pady=10)
+
         exit_button = ctk.CTkButton(
-            self,
+            self.buttons,
             text="Exit Game",
             command=self.show_exit_confirmation,
             fg_color="#FF6347",
             text_color="white",
             font=("Times New Roman", 20),
         )
-        exit_button.pack(pady=10)
+        exit_button.pack(side="left", padx=10, pady=10)
 
     def create_header(self):
         """Create interactive header tiles above the board."""
@@ -82,8 +98,9 @@ class GameBoard(ctk.CTkFrame):
             tile.grid(row=0, column=col, padx=10, pady=5)
             self.header_tiles.append(tile)
             tile.bind("<Enter>", lambda event, c=col: self.on_hover_enter(c))
+            tile.bind("<Motion>", lambda event, c=col: self.on_hover_enter(c))
             tile.bind("<Leave>", lambda event, c=col: self.on_hover_leave(c))
-            tile.bind("<Button-1>", lambda event, c=col: self.drop_token(c))
+            tile.bind("<Button-1>", lambda event, c=col: self.human_turn(c))
 
     def create_board(self):
         """Create the Connect 4 board."""
@@ -108,40 +125,54 @@ class GameBoard(ctk.CTkFrame):
                 )
                 tile.grid(row=row, column=col, padx=10, pady=5)
                 self.tiles[row][col] = tile
+
     def start_game(self):
         """Start a new game."""
+        self.start_game_button.configure(state=DISABLED)
         self.reset_board()
+        self.game_started = True
+        self.update_idletasks()  # Force the UI to update immediately
         if self.current_player == self.game_mode:
             self.computer_turn()
 
     def on_hover_enter(self, col):
         """Change header tile color on hover based on current player."""
-        if self.current_player == self.game_mode:
+        if self.current_player == self.game_mode or (not self.game_started):
+            self.header_tiles[col].configure(fg_color="transparent")
             return
         color = PLAYER_1_COLOR_HEADER if self.current_player == 1 else PLAYER_2_COLOR_HEADER
         self.header_tiles[col].configure(fg_color=color)
 
+        self.update_idletasks()  # Force the UI to update immediately
+
     def on_hover_leave(self, col):
         """Reset header tile color when hover leaves."""
         self.header_tiles[col].configure(fg_color="transparent")
+        self.update_idletasks()  # Force the UI to update immediately
 
     def drop_token(self, col):
         """Drop the token into the specified column."""
         for row in reversed(range(ROWS)):
             if self.board[row][col] == 0:
-                self.board[row][col] = self.current_player
                 color = PLAYER_1_COLOR if self.current_player == 1 else PLAYER_2_COLOR
-                self.tiles[row][col].configure(fg_color=color)
-                self.compute_scores(row, col, self.current_player)
-                self.current_player = 2 if self.current_player == 1 else 1
+                self.tiles[row][col].configure(fg_color=color)  # Update the visual tile
+                self.board[row][col] = self.current_player  # Update the logical board state
+
+                self.header_tiles[col].configure(fg_color="transparent")
+                self.update_idletasks()  # Force the UI to update immediately
+                self.compute_scores(row, col, self.current_player)  # Compute scores after updates
+                self.current_player = 2 if self.current_player == 1 else 1  # Switch the current player
+
+                # Check if the game is over
                 if self.is_game_over(self.board):
                     self.show_winner()
-                    break
+                    return
+
+                # Handle computer's turn if applicable
                 if self.game_mode == self.current_player:
                     self.computer_turn()
 
                 return
-
         messagebox.showwarning("Column Full", "This column is full. Try a different one.")
 
     def compute_scores(self, row, col, player_turn):
@@ -203,11 +234,17 @@ class GameBoard(ctk.CTkFrame):
         return
 
     def update_score_board(self, player1_score, player2_score):
-        self.score_board.configure(text=f"Player1: {player1_score}\tPlayer 2: {player2_score}")
+        self.score_board_player1.configure(text=f"{self.player1}: {player1_score}")
+        self.score_board_player2.configure(text=f"{self.player2}: {player2_score}")
+
 
     def show_winner(self):
         """Display the winner and reset the game."""
-        winner = f"Player {self.current_player} ({PLAYER_1_COLOR if self.current_player == 1 else PLAYER_2_COLOR}) wins!"
+        winner = ""
+        if self.player1_score > self.player2_score:
+            winner = f"{self.player1} ({PLAYER_1_COLOR}) wins!"
+        else:
+            winner = f"{self.player2} ({PLAYER_2_COLOR}) wins!"
         if messagebox.askyesno("Game Over", f"{winner}\n\nDo you want to play again?"):
             self.reset_board()
         else:
@@ -226,14 +263,23 @@ class GameBoard(ctk.CTkFrame):
         response = messagebox.askyesno("Exit Game", "Are you sure you want to exit the current game?")
         if response:
             self.exit_game()
-
+    def human_turn(self, col):
+        if self.current_player == self.game_mode:
+            return
+        self.drop_token(col)
     def computer_turn(self):
-
-        best_move = minmax(self.board, self.game_mode, self.k)
-
+        if self.player1 == "Computer":
+            self.score_board_player1.configure(text=f"{self.player1}: {self.player1_score}\tComputer is thinking....")
+        else:
+            self.score_board_player2.configure(text=f"{self.player2}: {self.player2_score}\tComputer is thinking....")
+        self.update_idletasks()  # Force the UI to update immediately
+        best_move = self.algorithm.computer_choice(board=self.board)
+        if self.player1 == "Computer":
+            self.score_board_player1.configure(text=f"{self.player1}: {self.player1_score}")
+        else:
+            self.score_board_player2.configure(text=f"{self.player2}: {self.player2_score}")
         print(f"Best move for computer: Column {best_move}")
         self.drop_token(best_move)
-
 
     def is_game_over(self, board):
         for row in range(ROWS):
