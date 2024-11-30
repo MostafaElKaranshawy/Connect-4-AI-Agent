@@ -1,3 +1,5 @@
+from time import sleep
+
 import customtkinter as ctk
 from tkinter import messagebox
 import math
@@ -14,18 +16,31 @@ EMPTY_COLOR = "#B0C4DE"  # Light Steel Blue
 BG_COLOR = "lightblue"  # Sky Blue
 
 
+def minmax(board, turn, k):
+    return 0
+
 class GameBoard(ctk.CTkFrame):
-    def __init__(self, master, exit_game, game_mode, k, *args, **kwargs):
+    def __init__(self, master, exit_game, game_mode, k, method, *args, **kwargs):
         super().__init__(master, *args, **kwargs)
         self.k = k
         self.exit_game = exit_game
         self.game_mode = game_mode  # Store the game mode
         self.current_player = 1  # Player 1 starts
+        self.method = method
+
+        self.player1_score = 0
+        self.player2_score = 0
+
+        self.score_board = ctk.CTkLabel(self, text="Player 1: 0\tPlayer 2: 0", font=("Times New Roman", 30, "bold", "italic"),
+                                        text_color='blue',
+                                        fg_color="transparent")
+        self.score_board.pack(pady=10)
 
         self.game_frame = ctk.CTkFrame(self,width=700, height=700)
         self.game_frame.pack(pady=50, padx=50)
         self.board = [[0] * COLS for _ in range(ROWS)]  # Initialize empty board
         self.configure(fg_color=BG_COLOR)
+
 
         # Header for column selection
         self.header_tiles = []
@@ -34,7 +49,7 @@ class GameBoard(ctk.CTkFrame):
         # Create the main board
         self.tiles = [[None for _ in range(COLS)] for _ in range(ROWS)]
         self.create_board()
-
+        self.start_game()
         # Exit button
         exit_button = ctk.CTkButton(
             self,
@@ -93,9 +108,16 @@ class GameBoard(ctk.CTkFrame):
                 )
                 tile.grid(row=row, column=col, padx=10, pady=5)
                 self.tiles[row][col] = tile
+    def start_game(self):
+        """Start a new game."""
+        self.reset_board()
+        if self.current_player == self.game_mode:
+            self.computer_turn()
 
     def on_hover_enter(self, col):
         """Change header tile color on hover based on current player."""
+        if self.current_player == self.game_mode:
+            return
         color = PLAYER_1_COLOR_HEADER if self.current_player == 1 else PLAYER_2_COLOR_HEADER
         self.header_tiles[col].configure(fg_color=color)
 
@@ -110,36 +132,78 @@ class GameBoard(ctk.CTkFrame):
                 self.board[row][col] = self.current_player
                 color = PLAYER_1_COLOR if self.current_player == 1 else PLAYER_2_COLOR
                 self.tiles[row][col].configure(fg_color=color)
-                if self.check_winner(row, col):
+                self.compute_scores(row, col, self.current_player)
+                self.current_player = 2 if self.current_player == 1 else 1
+                if self.is_game_over(self.board):
                     self.show_winner()
-                else:
-                    self.current_player = 3 - self.current_player  # Switch player
-
-                if self.game_mode == "player_vs_computer" and self.current_player == 2:
+                    break
+                if self.game_mode == self.current_player:
                     self.computer_turn()
 
                 return
 
         messagebox.showwarning("Column Full", "This column is full. Try a different one.")
 
-    def check_winner(self, row, col):
-        """Check for a winner after a token is placed."""
+    def compute_scores(self, row, col, player_turn):
 
-        def count_in_direction(delta_row, delta_col):
-            count = 0
-            r, c = row, col
-            while 0 <= r < ROWS and 0 <= c < COLS and self.board[r][c] == self.current_player:
-                count += 1
-                r += delta_row
-                c += delta_col
-            return count
+        # check for the row up
+        count = 0
+        for i in range(0,4):
+            if row + i < ROWS:
+                if self.board[row + i][col] == player_turn:
+                    count += 1
+                else:
+                    break
+        if count == 4:
+            if player_turn == 1:
+                self.player1_score += 1
+            else:
+                self.player2_score += 1
 
-        # Check all directions: horizontal, vertical, diagonal (both ways)
-        directions = [(0, 1), (1, 0), (1, 1), (1, -1)]
-        for dr, dc in directions:
-            if count_in_direction(dr, dc) + count_in_direction(-dr, -dc) - 1 >= 4:
-                return True
-        return False
+        count = 0
+        for i in range(0,4):
+            if row - i >= 0:
+                if self.board[row - i][col] == player_turn:
+                    count += 1
+                else:
+                    break
+        if count == 4:
+            if player_turn == 1:
+                self.player1_score += 1
+            else:
+                self.player2_score += 1
+
+        count = 0
+        for i in range(0,4):
+            if col + i < COLS:
+                if self.board[row][col + i] == player_turn:
+                    count += 1
+                else:
+                    break
+        if count == 4:
+            if player_turn == 1:
+                self.player1_score += 1
+            else:
+                self.player2_score += 1
+
+        count = 0
+        for i in range(0,4):
+            if col - i >= 0:
+                if self.board[row][col - i] == player_turn:
+                    count += 1
+                else:
+                    break
+        if count == 4:
+            if player_turn == 1:
+                self.player1_score += 1
+            else:
+                self.player2_score += 1
+
+        self.update_score_board(self.player1_score, self.player2_score)
+        return
+
+    def update_score_board(self, player1_score, player2_score):
+        self.score_board.configure(text=f"Player1: {player1_score}\tPlayer 2: {player2_score}")
 
     def show_winner(self):
         """Display the winner and reset the game."""
@@ -164,61 +228,14 @@ class GameBoard(ctk.CTkFrame):
             self.exit_game()
 
     def computer_turn(self):
-        """Simulate the computer's turn using the Minimax algorithm."""
-        print("Computer is thinking...")
-        best_move, _ = self.minimax(self.board, self.k, -math.inf, math.inf, True)
+
+        best_move = minmax(self.board, self.game_mode, self.k)
+
         print(f"Best move for computer: Column {best_move}")
         self.drop_token(best_move)
 
-    def minimax(self, board, depth, alpha, beta, is_maximizing):
-        """The Minimax algorithm with alpha-beta pruning to simulate a computer's move."""
-        if depth == 0 or self.is_game_over(board):
-            return -1, self.evaluate_board(board)
-
-        available_moves = [col for col in range(COLS) if board[0][col] == 0]
-        best_move = available_moves[0]
-
-        if is_maximizing:
-            max_eval = -math.inf
-            for move in available_moves:
-                new_board = self.simulate_move(board, move, 2)  # Computer's move
-                eval, _ = self.minimax(new_board, depth - 1, alpha, beta, False)
-                if eval > max_eval:
-                    max_eval = eval
-                    best_move = move
-                alpha = max(alpha, eval)
-                if beta <= alpha:
-                    break
-            return best_move, max_eval
-        else:
-            min_eval = math.inf
-            for move in available_moves:
-                new_board = self.simulate_move(board, move, 1)  # Player's move
-                eval, _ = self.minimax(new_board, depth - 1, alpha, beta, True)
-                if eval < min_eval:
-                    min_eval = eval
-                    best_move = move
-                beta = min(beta, eval)
-                if beta <= alpha:
-                    break
-            return best_move, min_eval
-
-    def evaluate_board(self, board):
-        """Evaluate the current board to score it for the Minimax algorithm."""
-        # You can implement your evaluation function here
-        return 0  # Placeholder for evaluation function
-
-    def simulate_move(self, board, col, player):
-        """Simulate a move without changing the actual game board."""
-        new_board = [row[:] for row in board]  # Copy of the board
-        for row in reversed(range(ROWS)):
-            if new_board[row][col] == 0:
-                new_board[row][col] = player
-                break
-        return new_board
 
     def is_game_over(self, board):
-        """Check if the game is over (win or full board)."""
         for row in range(ROWS):
             for col in range(COLS):
                 if board[row][col] == 0:
@@ -232,67 +249,76 @@ class OptionsMenu(ctk.CTkFrame):
         self.configure(fg_color=BG_COLOR)
 
         # Set the frame to expand and fill the entire screen
-        self.grid_rowconfigure(0, weight=1, pad=20, minsize=500)
+        self.grid_rowconfigure(0, weight=1, pad=20, minsize=200)
         self.grid_columnconfigure(0, weight=1, pad=20, minsize=500)
 
         # Title label
-        title_label = ctk.CTkLabel(self, text="Connect 4 Game", font=("Times New Roman", 30, "bold"), text_color='white')
+        title_label = ctk.CTkLabel(self, text="Connect 4 Game", font=("Times New Roman", 30, "bold"),
+                                   text_color='white')
         title_label.grid(row=0, column=0, pady=10)
 
         # Input field for K value
-        self.k_entry = ctk.CTkEntry(self, placeholder_text="Enter K value" ,font=("Times New Roman", 20))
-        self.k_entry.grid(row=1, column=0, pady=10)  # Ensure it takes available width
-        self.k_entry._set_dimensions(200, 50)
-        # Buttons for game modes
-        player_vs_computer_button = ctk.CTkButton(
+        self.k_entry = ctk.CTkEntry(self, placeholder_text="Enter K value", font=("Times New Roman", 20))
+        self.k_entry.grid(row=1, column=0, pady=10)
+        self.k_entry._set_dimensions(300, 30)
+
+        # Game mode options
+        method_options = ["Minmax without pruning", "Alpha-beta Minmax", "Expectiminmax"]
+
+        # Create a CTkComboBox for overall game mode
+        self.method_combo_box = ctk.CTkComboBox(self, values=method_options, width=200, font=("Times New Roman", 20))
+        self.method_combo_box.set("Select an option")
+        self.method_combo_box.grid(row=2, column=0, pady=10)
+        self.method_combo_box._set_dimensions(300, 30)
+
+        # Drop-down menu for selecting player vs computer settings
+        self.mode_options = ["Computer as player1", "Computer as player2"]
+        self.mode_combo_box = ctk.CTkComboBox(self, values=self.mode_options, width=200, font=("Times New Roman", 20))
+        self.mode_combo_box.set("Choose computer player turn")
+        self.mode_combo_box.grid(row=3, column=0, pady=10)
+        self.mode_combo_box._set_dimensions(300, 30)
+
+        # Button to confirm selection and start the game
+        start_button = ctk.CTkButton(
             self,
-            text="Player 1 vs Computer",
-            command=self.on_player_vs_computer,
-            fg_color=PLAYER_1_BACKGROUND_COLOR,
+            text="Start Game",
+            command=self.start_game_with_settings,
+            fg_color="green",
             text_color="white",
             font=("Times New Roman", 20),
         )
-        player_vs_computer_button.grid(row=2, column=0, pady=10)
-        player_vs_computer_button._set_dimensions(200, 50)
-        computer_vs_player_button = ctk.CTkButton(
-            self,
-            text="Computer vs Player 1",
-            command=self.on_computer_vs_player,
-            fg_color=PLAYER_2_BACKGROUND_COLOR,
-            text_color="white",
-            font=("Times New Roman", 20),
-        )
-        computer_vs_player_button.grid(row=3, column=0, pady=10)
-        computer_vs_player_button._set_dimensions(200, 50)
+        start_button.grid(row=4, column=0, pady=10)
+        start_button._set_dimensions(300, 30)
 
         # Exit Button
         exit_button = ctk.CTkButton(
             self,
             text="Exit",
             command=self.show_exit_confirmation,
-            fg_color="#FF6347",
+            fg_color="red",
             text_color="white",
             font=("Times New Roman", 20),
         )
-        exit_button.grid(row=4, column=0, pady=10)
-        exit_button._set_dimensions(200, 50)
-    def on_player_vs_computer(self):
-        """Start the game with Player 1 vs Computer."""
-        k_value = self.get_k_value()
-        if k_value:
-            self.start_game("player_vs_computer", k_value)
+        exit_button.grid(row=5, column=0, pady=10)
+        exit_button._set_dimensions(300, 30)
 
-    def on_computer_vs_player(self):
-        """Start the game with Computer vs Player 1."""
+
+    def start_game_with_settings(self):
         k_value = self.get_k_value()
-        if k_value:
-            self.start_game("computer_vs_player", k_value)
+        if not k_value:
+            return
+        mode = self.mode_combo_box.get()
+        method = self.method_combo_box.get()
+        if mode == "Computer as player1":
+            self.start_game(1, k_value, method)
+        elif mode == "Computer as player2":
+            self.start_game(2, k_value, method)
 
     def get_k_value(self):
         """Get the K value from the input field."""
         try:
             k_value = int(self.k_entry.get())
-            if k_value < 4:  # Assuming a minimum winning length of 4
+            if k_value < 0:  # Assuming a minimum winning length of 4
                 raise ValueError("K value must be at least 4.")
             return k_value
         except ValueError as e:
@@ -328,10 +354,10 @@ class MainApp(ctk.CTk):
         self.options_screen = OptionsMenu(self, self.start_game)
         self.options_screen.grid(row=0, column=0, sticky="nsew")  # Use grid() instead of pack()
 
-    def start_game(self, game_mode, k):
+    def start_game(self, computer_turn, k, method):
         """Switch to the game board screen with the selected mode."""
         self.options_screen.grid_forget()  # Hide the options screen
-        self.game_screen = GameBoard(self, self.show_options, game_mode, k)
+        self.game_screen = GameBoard(self, self.show_options, computer_turn, k, method)
         self.game_screen.grid(row=0, column=0, sticky="nsew")  # Use grid() instead of pack()
 
     def show_options(self):
