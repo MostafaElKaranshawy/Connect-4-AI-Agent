@@ -1,8 +1,9 @@
 class Node:
 
-    def __init__(self, value = None, col = None):
+    def __init__(self, value = None, col = None, node_type = None):
         self.col = col
         self.value = value  # Data held by the node
+        self.type = node_type
         self.children = []  # List to store child nodes
 
     def add_child(self, child_node):
