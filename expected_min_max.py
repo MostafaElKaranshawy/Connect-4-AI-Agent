@@ -178,7 +178,9 @@ class ExpectedMinMax:
 
     def _compute_score_plus_sides(self, board, player):
         score = 0
-        potential_weight = 3
+        # potential_weight = 3
+        potential_weight = 5
+
 
         # Right
         visited = set()
@@ -195,7 +197,8 @@ class ExpectedMinMax:
                             visited.add((i, j + k))
 
                     elif length == 3:
-                        score += potential * potential_weight
+                        # score += potential * potential_weight
+                        score += potential * (potential_weight // 2)
 
         # Down
         visited.clear()
@@ -209,7 +212,8 @@ class ExpectedMinMax:
                             visited.add((i + k, j))
 
                     elif length == 3:
-                        score += potential * potential_weight
+                        # score += potential * potential_weight
+                        score += potential * (potential_weight // 2)
 
         # Diagonal Down-Right
         visited.clear()
@@ -223,7 +227,8 @@ class ExpectedMinMax:
                             visited.add((i + k, j + k))
 
                     elif length == 3:
-                        score += potential * potential_weight
+                        # score += potential * potential_weight
+                        score += potential * (potential_weight // 2)
 
         # Diagonal Down-Left
         visited.clear()
@@ -237,7 +242,8 @@ class ExpectedMinMax:
                             visited.add((i + k, j - k))
 
                     elif length == 3:
-                        score += potential * potential_weight
+                        # score += potential * potential_weight
+                        score += potential * (potential_weight // 2)
 
         return score
 
@@ -251,6 +257,21 @@ class ExpectedMinMax:
         score += self._compute_score_plus_sides(board, player)
 
         # Blocking moves (put more weight on blocking moves)
+        # if self.max_depth % 2 != 0:
+        #     # computer can't defend itself
+        #     if player == self.computer:
+        #         score += self._blocking_moves(board, player) * 5
+        #     else:
+        #         score -= self._blocking_moves(board, player) * 5
+        #
+        # else:
+        #     # computer can defend itself
+        #     if player == self.computer:
+        #         score -= self._blocking_moves(board, player) * 5
+        #     else:
+        #         score += self._blocking_moves(board, player) * 5
+
+        # OR simply (which one is better?)
         score += self._blocking_moves(board, player) * 5
 
         return score

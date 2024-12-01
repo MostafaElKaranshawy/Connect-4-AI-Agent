@@ -11,6 +11,7 @@ class MinMax:
         self.max_depth = k
         self.rows = 6
         self.cols = 7
+        self.memo = {}
         self.weights =  [[3, 4,  5,  10,  5, 4, 3],
                          [4, 6,  8,  15,  8, 6, 4],
                          [5, 8, 11,  20, 11, 8, 5],
@@ -18,12 +19,12 @@ class MinMax:
                          [4, 6,  8,  15,  8, 6, 4],
                          [3, 4,  5,  10,  5, 4, 3]]
 
-
-
     def decide_ai_move(self, board):
         root = Node(node_type = NodeType.MAXIMIZE)
         depth = self.max_depth
         optimal_col, _ = self._maximize(board, root, depth)
+        root.col = optimal_col
+        self.memo.clear()
 
         # root.print_tree()
         return optimal_col, root
@@ -31,9 +32,17 @@ class MinMax:
 
     # Maximize function
     def _maximize(self, board, root, depth):
+        board_key = self._hash_board(board)
+        if (board_key) in self.memo:
+            child_node, value = self.memo[(board_key)]
+            root = child_node
+            return None, root.value
+
+
         if self._is_terminal(board) or depth == 0:
             heuristic_value = self._evaluate(board)
             root.value = heuristic_value
+            self.memo[(board_key)] = (root, heuristic_value)
             return None, heuristic_value
 
         max_col = None
@@ -55,12 +64,21 @@ class MinMax:
             i += 1
 
         root.value = max_utility
+        self.memo[(board_key)] = (root, max_utility)
         return max_col, max_utility
 
     def _minimize(self, board, root, depth):
+        board_key = self._hash_board(board)
+        if (board_key) in self.memo:
+            child_node, value = self.memo[(board_key)]
+            root = child_node
+            return None, root.value
+
+
         if self._is_terminal(board) or depth == 0:
             heuristic_value = self._evaluate(board)
             root.value = heuristic_value
+            self.memo[(board_key)] = (root, heuristic_value)
             return None, heuristic_value
 
         min_col = None
@@ -82,8 +100,8 @@ class MinMax:
             i += 1
 
         root.value = min_utility
+        self.memo[(board_key)] = (root, min_utility)
         return min_col, min_utility
-
 
 
     def _count_potential_sequence(self, i, j, di, dj, board, player):
@@ -144,6 +162,24 @@ class MinMax:
         # add current score of the player
         score += self._compute_score_plus_sides(board, player)
 
+
+        # Blocking moves (put more weight on blocking moves)
+        # if self.max_depth % 2 != 0:
+        #     # computer can't defend itself
+        #     if player == self.computer:
+        #         score += self._blocking_moves(board, player) * 5
+        #     else:
+        #         score -= self._blocking_moves(board, player) * 5
+        #
+        # else:
+        #     # computer can defend itself
+        #     if player == self.computer:
+        #         score -= self._blocking_moves(board, player) * 5
+        #     else:
+        #         score += self._blocking_moves(board, player) * 5
+
+
+        # OR simply (which one is better?)
         # Blocking moves (put more weight on blocking moves)
         score += self._blocking_moves(board, player) * 5
 
@@ -152,7 +188,9 @@ class MinMax:
 
     def _compute_score_plus_sides(self, board, player):
         score = 0
-        potential_weight = 3
+
+        # potential_weight = 3
+        potential_weight = 5
 
         # Right
         visited = set()
@@ -169,8 +207,8 @@ class MinMax:
                             visited.add((i, j + k))
 
                     elif length == 3:
-                        score += potential * potential_weight
-
+                        # score += potential * potential_weight
+                        score += potential * (potential_weight // 2)
         # Down
         visited.clear()
         for i in range(self.rows - 3):  # Only iterate where 4 rows are available
@@ -183,7 +221,8 @@ class MinMax:
                             visited.add((i + k, j))
 
                     elif length == 3:
-                        score += potential * potential_weight
+                        # score += potential * potential_weight
+                        score += potential * (potential_weight // 2)
 
         # Diagonal Down-Right
         visited.clear()
@@ -197,7 +236,8 @@ class MinMax:
                             visited.add((i + k, j + k))
 
                     elif length == 3:
-                        score += potential * potential_weight
+                        # score += potential * potential_weight
+                        score += potential * (potential_weight // 2)
 
         # Diagonal Down-Left
         visited.clear()
@@ -211,7 +251,8 @@ class MinMax:
                             visited.add((i + k, j - k))
 
                     elif length == 3:
-                        score += potential * potential_weight
+                         # score += potential * potential_weight
+                        score += potential * (potential_weight // 2)
 
         return score
 
@@ -239,3 +280,6 @@ class MinMax:
                 children.append(new_board)
                 columns.append(col)
         return children, columns
+
+    def _hash_board(self, board):
+        return tuple(tuple(row) for row in board)
