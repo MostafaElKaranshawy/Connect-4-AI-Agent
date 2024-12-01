@@ -2,6 +2,7 @@ import threading
 
 from min_max import MinMax
 from min_max_prune import MinMaxPrune
+from expected_min_max import ExpectedMinMax
 from tree import TreeVisualizer
 
 class Methods:
@@ -15,8 +16,7 @@ class Methods:
         elif method == "Alpha-beta Minmax":
             self.method = MinMaxPrune(self.computer_turn, self.human_turn, self.k)
         elif method == "Expectiminmax":
-            pass
-
+            self.method = ExpectedMinMax(self.computer_turn, self.human_turn, self.k)
     def computer_choice(self, board):
         move, tree_node = self.method.decide_ai_move(board=board)
         return move, tree_node
