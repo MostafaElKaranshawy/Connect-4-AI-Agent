@@ -227,9 +227,7 @@ class MinMax:
     def _get_children(self, board, player):
         children = []
         columns = []
-
-        column_order = [3, 2, 4, 1, 5, 0, 6]
-        for col in column_order:
+        for col in range(self.cols):
             if board[0][col] == 0:
                 new_board = [row[:] for row in board]
 

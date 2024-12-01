@@ -235,12 +235,8 @@ class MinMaxPrune:
     def _get_children(self, board, player):
         children = []
         columns = []
-
-        column_order = [3, 2, 4, 1, 5, 0, 6]
-        for col in column_order:
+        for col in range(self.cols):
             if board[0][col] == 0:
-                columns.append(col)
-
                 new_board = [row[:] for row in board]
 
                 # Drop the piece into the lowest available row in the column
@@ -249,4 +245,5 @@ class MinMaxPrune:
                         new_board[row][col] = player
                         break
                 children.append(new_board)
+                columns.append(col)
         return children, columns
