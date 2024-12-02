@@ -139,8 +139,8 @@ class GameBoard(ctk.CTkFrame):
 
     def start_game(self):
         """Start a new game."""
-        self.start_game_button.configure(state=DISABLED)
         self.reset_board()
+        self.start_game_button.configure(state=DISABLED)
         self.game_started = True
         self.update_idletasks()  # Force the UI to update immediately
         if self.current_player == self.game_mode:
@@ -265,6 +265,8 @@ class GameBoard(ctk.CTkFrame):
     def show_winner(self):
         """Display the winner and reset the game."""
         winner = ""
+        if self.player1_score == self.player2_score:
+            winner = "It's a tie!"
         if self.player1_score > self.player2_score:
             winner = f"{self.player1} ({PLAYER_1_COLOR}) wins!"
         else:
@@ -276,6 +278,13 @@ class GameBoard(ctk.CTkFrame):
 
     def reset_board(self):
         """Reset the board for a new game."""
+        self.player1_score = 0
+        self.player2_score = 0
+        self.update_score_board(0, 0)
+        self.game_started = False
+        self.start_game_button.configure(state=NORMAL)
+        self.tree_button.configure(state=DISABLED)
+
         self.board = [[0] * COLS for _ in range(ROWS)]
         self.current_player = 1
         for row in range(ROWS):

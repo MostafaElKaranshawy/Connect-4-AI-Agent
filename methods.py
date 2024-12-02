@@ -19,9 +19,27 @@ class Methods:
             self.method = ExpectedMinMax(self.computer_turn, self.human_turn, self.k)
     def computer_choice(self, board):
         move, tree_node = self.method.decide_ai_move(board=board)
+        self.print_tree(tree_node, prefix="", is_last=True)
         return move, tree_node
 
     def show_tree(self, tree_node):
         tree = TreeVisualizer(tree_node)
         tree.display_tree()
 
+    # def print_tree(self, node, level=0):
+    #     indent = " " * (level * 4)  # Indent for visualization
+    #     print(f"{indent}Type: {node.type}, Value: {node.value}, Col: {node.col}")
+    #     for child in node.children:
+    #         self.print_tree(child, level + 1)
+
+    def print_tree(self, node, prefix="", is_last=True):
+        # Print the current node
+        connector = "└── " if is_last else "├── "
+        print(f"{prefix}{connector}Type: {node.type}, Value: {node.value}, Col: {node.col}")
+
+        # Update the prefix for child nodes
+        new_prefix = prefix + ("    " if is_last else "│   ")
+
+        # Recursively print each child node
+        for i, child in enumerate(node.children):
+            self.print_tree(child, new_prefix, i == len(node.children) - 1)
