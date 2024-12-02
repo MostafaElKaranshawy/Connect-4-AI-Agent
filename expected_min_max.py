@@ -24,7 +24,7 @@ class ExpectedMinMax:
     def decide_ai_move(self, board):
         root = Node(node_type = NodeType.MAXIMIZE)
         depth = self.max_depth
-        # depth = math.ceil(depth / 2)
+        depth = math.ceil(depth / 2)
         start = time.time()
         optimal_col, _ = self._maximize(board, root, depth)
         end = time.time()
