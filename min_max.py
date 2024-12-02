@@ -4,7 +4,7 @@ import math
 from node import Node
 from node_type import NodeType
 from heuristic import Heuristic
-
+import time
 class MinMax:
     def __init__(self, computer, human, k):
         self.computer = computer
@@ -12,6 +12,7 @@ class MinMax:
         self.max_depth = k
         self.rows = 6
         self.cols = 7
+        self.nodes_expanded = 0
         self.memo = {}
         self.heuristic = Heuristic()
         self.weights =  [[3, 4,  5,  10,  5, 4, 3],
@@ -24,8 +25,12 @@ class MinMax:
     def decide_ai_move(self, board):
         root = Node(node_type = NodeType.MAXIMIZE)
         depth = self.max_depth
+        start = time.time()
         optimal_col, _ = self._maximize(board, root, depth)
+        end = time.time()
+        print("Time taken: ", end - start)
         root.col = optimal_col
+        print("Nodes expanded: ", self.nodes_expanded)
         self.memo.clear()
 
         return optimal_col, root
@@ -33,6 +38,7 @@ class MinMax:
 
     # Maximize function
     def _maximize(self, board, root, depth):
+        self.nodes_expanded += 1
         board_key = self._hash_board(board)
         if (board_key) in self.memo:
             child_node, value = self.memo[(board_key)]
@@ -69,6 +75,7 @@ class MinMax:
         return max_col, max_utility
 
     def _minimize(self, board, root, depth):
+        self.nodes_expanded += 1
         board_key = self._hash_board(board)
         if (board_key) in self.memo:
             child_node, value = self.memo[(board_key)]

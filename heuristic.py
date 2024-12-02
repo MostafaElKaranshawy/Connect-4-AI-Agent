@@ -3,6 +3,7 @@ class Heuristic:
     def __init__(self):
         self.rows = 6
         self.cols = 7
+        self.cache = {}
         self.weights =  [[3, 4,  5,  10,  5, 4, 3],
                          [4, 6,  8,  15,  8, 6, 4],
                          [5, 8, 11,  20, 11, 8, 5],
@@ -11,8 +12,11 @@ class Heuristic:
                          [3, 4,  5,  10,  5, 4, 3]]
 
     def evaluate(self, board, player):
-        score = 0
+        board_key = self._hash_board(board)
+        if (board_key, player) in self.cache:
+            return self.cache[(board_key, player)]
 
+        score = 0
         # Positional weight
         score += self._position_weight(board, player)
 
@@ -30,6 +34,8 @@ class Heuristic:
 
         # Blocking moves
         score += self.blocking_moves(board, player) * 500
+
+        self.cache[(board_key, player)] = score
         return score
 
     def _count_sequence(self, i, j, di, dj, board, player):
@@ -62,10 +68,12 @@ class Heuristic:
 
     def _position_weight(self, board, player):
         score = 0
-        for i in range(self.rows):
-            for j in range(self.cols):
+        for j in range(self.cols):
+            for i in range(self.rows - 1, -1, -1):
                 if board[i][j] == player:
                     score += self.weights[i][j]
+                elif board[i][j] == 0:
+                    break
         return score
 
     def check_connected_sequences(self, board, player, sequence_to_check):
@@ -166,7 +174,8 @@ class Heuristic:
                         for k in range(length):  # Mark cells in this sequence as visited
                             visited.add((i + k, j - k))
         return score
-
+    def _hash_board(self, board):
+        return tuple(tuple(row) for row in board)
 # Blocking moves (put more weight on blocking moves)
 # if self.max_depth % 2 != 0:
 #     # computer can't defend itself

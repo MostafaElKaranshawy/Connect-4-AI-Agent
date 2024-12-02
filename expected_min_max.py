@@ -1,6 +1,6 @@
 import math
 from node import Node
-
+import time
 from node_type import NodeType
 from heuristic import Heuristic
 
@@ -11,6 +11,7 @@ class ExpectedMinMax:
         self.max_depth = k
         self.rows = 6
         self.cols = 7
+        self.nodes_expanded = 0
         self.memo = {}  # Dictionary to store memoized results
         self.heuristic = Heuristic()
         self.weights = [[3, 4,  5,  10,  5, 4, 3],
@@ -23,14 +24,20 @@ class ExpectedMinMax:
     def decide_ai_move(self, board):
         root = Node(node_type = NodeType.MAXIMIZE)
         depth = self.max_depth
+        # depth = math.ceil(depth / 2)
+        start = time.time()
         optimal_col, _ = self._maximize(board, root, depth)
+        end = time.time()
         root.col = optimal_col
         self.memo.clear()
+        print("Time taken: ", end - start)
+        print("Nodes expanded: ", self.nodes_expanded)
         print("done")
         return optimal_col, root
 
 
     def _maximize(self, board, root, depth):
+        self.nodes_expanded += 1
         board_key = self._hash_board(board)
         if (board_key) in self.memo:
             root.value = self.memo[(board_key)]
@@ -51,7 +58,7 @@ class ExpectedMinMax:
 
             chance_node = Node(col = col, node_type = NodeType.CHANCE)
             root.add_child(chance_node)
-
+            self.nodes_expanded += 1
             utility = self.calculate_utility(board, col, child, chance_node, depth, self.computer)
             if utility > max_utility:
                 max_col = col
@@ -62,6 +69,7 @@ class ExpectedMinMax:
         return max_col, max_utility
 
     def _minimize(self, board, root, depth):
+        self.nodes_expanded += 1
         board_key = self._hash_board(board)
         if (board_key) in self.memo:
             root.value = self.memo[(board_key)]
@@ -82,7 +90,7 @@ class ExpectedMinMax:
 
             chance_node = Node(col = col, node_type = NodeType.CHANCE)
             root.add_child(chance_node)
-
+            self.nodes_expanded += 1
             utility = self.calculate_utility(board, col, child, chance_node, depth, self.human)
             if utility < min_utility:
                 min_col = col
@@ -94,18 +102,32 @@ class ExpectedMinMax:
 
     def calculate_utility(self, board, col, child, chance_node, depth, player):
         utility = 0
-
+        prop = 1
         # 20% probability of the left column (if valid)
         if col > 0:
             left_child = self._get_child_with_column(board, col - 1, player)
             if left_child:
                 left_child_node = Node(col = col - 1, node_type = NodeType.MAXIMIZE if player == self.computer
                                                                                     else NodeType.MINIMIZE)
+                prop -= 0.2
                 chance_node.add_child(left_child_node)
                 _, left_utility = self._minimize(left_child, left_child_node, depth - 1) \
                     if player == self.computer else self._maximize(left_child, left_child_node, depth - 1)
                 utility += 0.2 * left_utility
                 left_child_node.value = left_utility
+
+        # 20% probability of the right column (if valid)
+        if col < self.cols - 1:
+            right_child = self._get_child_with_column(board, col + 1, player)
+            if right_child:
+                right_child_node = Node(col=col + 1, node_type=NodeType.MAXIMIZE if player == self.computer
+                else NodeType.MINIMIZE)
+                prop -= 0.2
+                chance_node.add_child(right_child_node)
+                _, right_utility = self._minimize(right_child, right_child_node, depth - 1) \
+                    if player == self.computer else self._maximize(right_child, right_child_node, depth - 1)
+                utility += 0.2 * right_utility
+                right_child_node.value = right_utility
 
         # 60% probability of the chosen column
         child_node = Node(col = col)
@@ -113,19 +135,10 @@ class ExpectedMinMax:
         _, chosen_utility = self._minimize(child, child_node, depth - 1) \
             if player == self.computer else self._maximize(child, child_node, depth - 1)
 
-        utility += 0.6 * chosen_utility
+        utility += prop * chosen_utility
         child_node.value = chosen_utility
 
-        # 20% probability of the right column (if valid)
-        if col < self.cols - 1:
-            right_child = self._get_child_with_column(board, col + 1, player)
-            if right_child:
-                right_child_node = Node(col = col + 1)
-                chance_node.add_child(right_child_node)
-                _, right_utility = self._minimize(right_child, right_child_node, depth - 1) \
-                    if player == self.computer else self._maximize(right_child, right_child_node, depth - 1)
-                utility += 0.2 * right_utility
-                right_child_node.value = right_utility
+
 
         return utility
 

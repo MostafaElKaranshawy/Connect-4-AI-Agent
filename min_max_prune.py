@@ -1,12 +1,10 @@
 import math
-
+import time
 
 from node import Node
 from node_type import NodeType
 
 from heuristic import Heuristic
-
-
 
 class MinMaxPrune:
     def __init__(self, computer, human, k):
@@ -15,7 +13,7 @@ class MinMaxPrune:
         self.max_depth = k
         self.rows = 6
         self.cols = 7
-        self.memo = {}
+        self.nodes_expanded = 0
         self.heuristic = Heuristic()
         self.weights =  [[3, 4,  5,  10,  5, 4, 3],
                          [4, 6,  8,  13,  8, 6, 4],
@@ -30,29 +28,23 @@ class MinMaxPrune:
         depth = self.max_depth
         alpha = -math.inf
         beta = math.inf
-
+        start = time.time()
         optimal_col, _ = self._maximize(board, root, depth, alpha, beta)
-
+        end = time.time()
         root.col = optimal_col
-        self.memo.clear()
-
+        print("Time taken: ", end - start)
+        print("Nodes expanded: ", self.nodes_expanded)
         # root.print_tree()
         return optimal_col, root
 
-
     # Maximize function
     def _maximize(self, board, root, depth, alpha, beta):
-        board_key = self._hash_board(board)
-        if (board_key) in self.memo:
-            child_node, value = self.memo[(board_key)]
-            root = child_node
-            return None, root.value
-
-
+        self.nodes_expanded += 1
         if self._is_terminal(board) or depth == 0:
             heuristic_value = self._evaluate(board)
             root.value = heuristic_value
-            self.memo[(board_key)] = (root, heuristic_value)
+            root.alpha = alpha
+            root.beta = beta
             return None, heuristic_value
 
         max_col = None
@@ -72,27 +64,22 @@ class MinMaxPrune:
                 max_utility = utility
 
             alpha = max(alpha, max_utility)  # Update alpha
+            root.alpha = alpha
+            root.beta = beta
             if beta <= alpha:  # Prune the branch
                 break
 
             i += 1
-
         root.value = max_utility
-        self.memo[(board_key)] = (root, max_utility)
         return max_col, max_utility
 
     def _minimize(self, board, root, depth, alpha, beta):
-        board_key = self._hash_board(board)
-        if (board_key) in self.memo:
-            child_node, value = self.memo[(board_key)]
-            root = child_node
-            return None, root.value
-
-
+        self.nodes_expanded += 1
         if self._is_terminal(board) or depth == 0:
             heuristic_value = self._evaluate(board)
             root.value = heuristic_value
-            self.memo[(board_key)] = (root, heuristic_value)
+            root.alpha = alpha
+            root.beta = beta
             return None, heuristic_value
 
         min_col = None
@@ -112,13 +99,14 @@ class MinMaxPrune:
                 min_utility = utility
 
             beta = min(beta, min_utility)  # Update beta
+            root.beta = beta
+            root.alpha = alpha
             if beta <= alpha:  # Prune the branch
                 break
 
             i += 1
 
         root.value = min_utility
-        self.memo[(board_key)] = (root, min_utility)
         return min_col, min_utility
 
     def _evaluate(self, board):
@@ -144,6 +132,3 @@ class MinMaxPrune:
                 children.append(new_board)
                 columns.append(col)
         return children, columns
-
-    def _hash_board(self, board):
-        return tuple(tuple(row) for row in board)

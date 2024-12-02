@@ -1,4 +1,7 @@
 from graphviz import Digraph
+from node import Node
+
+from node_type import NodeType
 
 class TreeVisualizer:
     def __init__(self, root):
@@ -11,19 +14,27 @@ class TreeVisualizer:
 
         if node is None:
             node = self.root
-
-        # Determine the shape based on the node type
-        if node.type == "MAXIMIZE":
-            shape = "trapezium"  # Upper trapezoid
-        elif node.type == "MINIMIZE":
-            shape = "invtrapezium"  # Downward trapezoid
-        elif node.type == "CHANCE":
-            shape = "circle"  # Circle
+        if node.type == NodeType.MAXIMIZE:
+            shape = 'trapezium'
+        elif node.type == NodeType.MINIMIZE:
+            shape = 'invtrapezium'
+        elif node.type == NodeType.CHANCE:
+            shape = 'circle'
         else:
-            shape = "box"  # Default shape
-
+            shape = 'triangle'
         # Add the current node to the graph with the specific shape
-        graph.node(str(id(node)), label=f"col={node.col}\nval={node.value}", shape=shape)
+        label_parts = [
+            f"col={node.col}",
+            f"val={node.value}"
+        ]
+        if node.alpha is not None:
+            label_parts.append(f"alpha={node.alpha}")
+        if node.beta is not None:
+            label_parts.append(f"beta={node.beta}")
+
+        label = "\n".join(label_parts)
+
+        graph.node(str(id(node)), label=label, shape=shape)
 
         # Add edges for children
         for child in node.children:
