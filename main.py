@@ -267,9 +267,9 @@ class GameBoard(ctk.CTkFrame):
         winner = ""
         if self.player1_score == self.player2_score:
             winner = "It's a tie!"
-        elif self.player1_score > self.player2_score:
+        if self.player1_score > self.player2_score:
             winner = f"{self.player1} ({PLAYER_1_COLOR}) wins!"
-        else:
+        elif self.player1_score < self.player2_score:
             winner = f"{self.player2} ({PLAYER_2_COLOR}) wins!"
         if messagebox.askyesno("Game Over", f"{winner}\n\nDo you want to play again?"):
             self.reset_board()
@@ -420,64 +420,32 @@ class OptionsMenu(ctk.CTkFrame):
 class MainApp(ctk.CTk):
     def __init__(self):
         super().__init__()
+        self.game_screen = None
         self.title("Connect 4")
-        self.geometry("700x800")  # Initial size
+        # self.geometry("700x800")
+
+        # Use blue color scheme for the app
         ctk.set_appearance_mode("light")
         ctk.set_default_color_theme("blue")
 
-        # Scrollable content setup
-        self.scroll_canvas = Canvas(self, bg=BG_COLOR)
-        self.scroll_frame = ctk.CTkFrame(self.scroll_canvas)
-        self.scrollbar = Scrollbar(self, orient="vertical", command=self.scroll_canvas.yview)
-        self.scroll_canvas.configure(yscrollcommand=self.scrollbar.set)
-
-        # Grid layout for canvas and scrollbar
-        self.scroll_canvas.grid(row=0, column=0, sticky="nsew")
-        self.scrollbar.grid(row=0, column=1, sticky="ns")
-
-        # Configure resizing
+        # Configure rows and columns for grid layout
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
-        # Create a window inside the canvas for the content frame
-        self.scroll_window = self.scroll_canvas.create_window((0, 0), window=self.scroll_frame, anchor="nw")
-
-        # Bind resize events
-        self.scroll_frame.bind("<Configure>", self.on_frame_configure)
-        self.scroll_canvas.bind("<Configure>", self.on_canvas_configure)
-
-        # Initial screen
-        self.options_screen = OptionsMenu(self.scroll_frame, self.start_game)
-        self.options_screen.grid(row=0, column=0, sticky="nsew")
+        # Create and show the options screen initially
+        self.options_screen = OptionsMenu(self, self.start_game)
+        self.options_screen.grid(row=0, column=0, sticky="nsew")  # Use grid() instead of pack()
 
     def start_game(self, computer_turn, k, method):
         """Switch to the game board screen with the selected mode."""
-        for widget in self.scroll_frame.winfo_children():
-            widget.destroy()
-        self.game_screen = GameBoard(self.scroll_frame, self.show_options, computer_turn, k, method)
-        self.game_screen.grid(row=0, column=0, sticky="nsew")
+        self.options_screen.grid_forget()  # Hide the options screen
+        self.game_screen = GameBoard(self, self.show_options, computer_turn, k, method)
+        self.game_screen.grid(row=0, column=0, sticky="nsew")  # Use grid() instead of pack()
 
     def show_options(self):
         """Go back to the options screen."""
-        for widget in self.scroll_frame.winfo_children():
-            widget.destroy()
-        self.options_screen = OptionsMenu(self.scroll_frame, self.start_game)
-        self.options_screen.grid(row=0, column=0, sticky="nsew")
-
-    def on_frame_configure(self, event):
-        """Adjust the scroll region to match the size of the frame."""
-        self.scroll_canvas.configure(scrollregion=self.scroll_canvas.bbox("all"))
-
-    def on_canvas_configure(self, event):
-        """Ensure the frame width matches the canvas width."""
-        canvas_width = event.width
-        self.scroll_canvas.itemconfig(self.scroll_window, width=canvas_width)
-
-
-if __name__ == "__main__":
-    app = MainApp()
-    app.mainloop()
-
+        self.game_screen.grid_forget()  # Hide the game screen
+        self.options_screen.grid(row=0, column=0, sticky="nsew")  # Show the options screen using grid()
 
 
 if __name__ == "__main__":

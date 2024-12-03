@@ -19,7 +19,7 @@ class Methods:
             self.method = ExpectedMinMax(self.computer_turn, self.human_turn, self.k)
     def computer_choice(self, board):
         move, tree_node = self.method.decide_ai_move(board=board)
-        # self.print_tree(tree_node, prefix="", is_last=True)
+        self.print_tree(tree_node, prefix="", is_last=True)
         return move, tree_node
 
     def show_tree(self, tree_node):
