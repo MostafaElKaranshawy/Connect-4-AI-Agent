@@ -12,15 +12,15 @@
 
 - **Options Menu**
 
-![alt text](image.png)
+![alt text](assets/image.png)
 
 - **Game Board**
 
-![alt text](image-1.png)
+![alt text](assets/image-1.png)
 
 - **End Game**
 
-![alt text](image-2.png)
+![alt text](assets/image-2.png)
 
 <hr>
 
