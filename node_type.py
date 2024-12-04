@@ -1,4 +1,0 @@
-class NodeType:
-    MAXIMIZE = "MAXIMIZE"
-    MINIMIZE = "MINIMIZE"
-    CHANCE = "CHANCE"
